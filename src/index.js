@@ -1,7 +1,10 @@
 const express = require('express');
+const { createClient } = require('redis');
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+let redisClient = null;
 
 // Middleware
 app.use(express.json());
@@ -11,27 +14,63 @@ app.get('/', (req, res) => {
   res.json({ message: 'Hello World!' });
 });
 
-// Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK' });
 });
 
-// User routes (without Redis for now)
+// Routes utilisateur (Redis désactivé si non configuré)
 app.post('/user', (req, res) => {
-  res.status(503).json({ error: 'Redis not configured' });
+  if (!redisClient) {
+    return res.status(503).json({ error: 'Redis non configuré' });
+  }
+  res.json({ message: 'OK (Redis prêt)' });
 });
 
 app.get('/user/:username', (req, res) => {
-  res.status(503).json({ error: 'Redis not configured' });
+  if (!redisClient) {
+    return res.status(503).json({ error: 'Redis non configuré' });
+  }
+  res.json({ message: 'OK (Redis prêt)' });
 });
 
 app.delete('/user/:username', (req, res) => {
-  res.status(503).json({ error: 'Redis not configured' });
+  if (!redisClient) {
+    return res.status(503).json({ error: 'Redis non configuré' });
+  }
+  res.json({ message: 'OK (Redis prêt)' });
 });
 
-// Start server
-app.listen(port, '0.0.0.0', () => {
-  console.log(`Server running on port ${port}`);
-});
+// 🔴 Connexion Redis (OPTIONNELLE)
+async function connectRedis() {
+  if (!process.env.REDIS_URL) {
+    console.log('Redis désactivé (REDIS_URL absent)');
+    return;
+  }
+
+  redisClient = createClient({
+    url: process.env.REDIS_URL,
+    socket: {
+      tls: true,
+      rejectUnauthorized: false
+    }
+  });
+
+  redisClient.on('error', (err) => {
+    console.error('Redis Client Error:', err.message);
+  });
+
+  await redisClient.connect();
+  console.log('Redis connecté');
+}
+
+// 🔵 Démarrage serveur
+if (require.main === module) {
+  connectRedis()
+    .finally(() => {
+      app.listen(port, '0.0.0.0', () => {
+        console.log(`Server running on port ${port}`);
+      });
+    });
+}
 
 module.exports = { app };
