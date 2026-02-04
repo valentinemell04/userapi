@@ -40,7 +40,7 @@ app.delete('/user/:username', (req, res) => {
   res.json({ message: 'OK (Redis prêt)' });
 });
 
-// 🔴 Connexion Redis (OPTIONNELLE)
+// 🔴 Connexion Redis (Upstash)
 async function connectRedis() {
   if (!process.env.REDIS_URL) {
     console.log('Redis désactivé (REDIS_URL absent)');
@@ -50,7 +50,7 @@ async function connectRedis() {
   redisClient = createClient({
     url: process.env.REDIS_URL,
     socket: {
-      tls: true,
+      tls: true,              // Upstash nécessite TLS
       rejectUnauthorized: false
     }
   });
@@ -61,6 +61,11 @@ async function connectRedis() {
 
   await redisClient.connect();
   console.log('Redis connecté');
+
+  // Petit test pour vérifier la connexion
+  await redisClient.set('test', 'Hello Redis!');
+  const value = await redisClient.get('test');
+  console.log('Valeur test Redis récupérée :', value);
 }
 
 // 🔵 Démarrage serveur
