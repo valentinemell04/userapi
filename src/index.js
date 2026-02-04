@@ -121,7 +121,7 @@ module.exports = { app, connectRedis, getRedisClient: () => redisClient };
 // Start server only if not in test mode
 if (require.main === module) {
   connectRedis().then(() => {
-    app.listen(port, () => {
+    app.listen(port, '0.0.0.0', () => {
       console.log(`Server running on port ${port}`);
     });
   });
